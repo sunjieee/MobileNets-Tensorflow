@@ -100,7 +100,7 @@ class MobileNets(object):
 			return h_act
 
 
-	def conv_dw(self, input_tensor, depth, filter, stride=1, bn=batch_norm, act=tf.nn.relu, scope):
+	def conv_dw(self, input_tensor, filter, stride=1, bn=batch_norm, act=tf.nn.relu, scope):
 		
 		with tf.variable_scope(scope):
 
