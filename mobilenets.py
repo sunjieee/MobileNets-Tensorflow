@@ -1,6 +1,9 @@
 import tensorflow as tf
 import numpy as np
 
+__author__ = 'Sun Jie'
+'''Tensorflow Implementation of MobileNets'''
+
 class MobileNets(object):
 	"""docstring for MobileNets"""
 	def __init__(self, images, is_training=True, spatial_squeeze=True, end_point=[]):
