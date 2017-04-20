@@ -124,8 +124,8 @@ class MobileNets(object):
 		k = self.get_tensor_size(x)
 		return tf.nn.avg_pool(x, ksize=[1, k[1], k[2], 1], strides=[1, 1, 1, 1], padding="VALID")
 
-	def spatial_squeeze(self, x):
-		if spatial_squeeze:
+	def squeeze(self, x):
+		if self.spatial_squeeze:
 			return tf.squeeze(x, [1, 2], name='spatial_squeeze')
 		return x
 
@@ -176,8 +176,8 @@ class MobileNets(object):
 		#print self.get_tensor_size(net)
 		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
 
-		self.net = self.spatial_squeeze(net)
+		self.net = self.squeeze(net)
 
-		return net, self.end_point
+		return self.net, self.end_point
 
 
