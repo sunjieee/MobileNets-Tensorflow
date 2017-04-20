@@ -1,5 +1,10 @@
 import tensorflow
 
+__author__ = "Sun Jie"
+"""
+Tensorflow implementation of MobileNets
+"""
+
 class MobileNets(object):
 	"""docstring for MobileNets"""
 	def __init__(self, is_training, images, end_point=[]):
