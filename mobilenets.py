@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 
 __author__ = "Sun Jie"
 """
