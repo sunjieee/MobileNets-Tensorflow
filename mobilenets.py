@@ -69,9 +69,11 @@ class MobileNets(object):
 				with tf.control_dependencies([ema_apply_op]):
 					return tf.identity(batch_mean), tf.identity(batch_var)
 			with tf.variable_scope(tf.get_variable_scope(), reuse=False):
-				mean, var = tf.cond(phase_train,
-									mean_var_with_update,
-									lambda: (ema.average(batch_mean), ema.average(batch_var)))
+				if phase_train:
+					mean, var = mean_var_with_update()
+				else:
+					mean, var = lambda: (ema.average(batch_mean), ema.average(batch_var))
+
 			normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, eps)
 		return normed
 
@@ -90,7 +92,7 @@ class MobileNets(object):
 				h_bn = self.batch_norm(h_conv, depth, self.is_training)
 
 			h_act = act(h_bn)
-			end_point.append(h_act)
+			self.end_point.append(h_act)
 			self.add_activation_summary(h_act)
 
 			return h_act
@@ -103,14 +105,14 @@ class MobileNets(object):
 			dim = self.get_tensor_size(input_tensor)[3]
 
 			W = self.weight_variable_xavier_initialized([filter[0], filter[1], dim, 1], name='weight')
-			b = self.bias_variable([depth], name='bias')
+			b = self.bias_variable([dim], name='bias')
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
 			if bn != None:
-				h_bn = self.batch_norm(h_conv, depth, self.is_training)
+				h_bn = self.batch_norm(h_conv, dim, self.is_training)
 
 			h_act = act(h_bn)
-			end_point.append(h_act)
+			self.end_point.append(h_act)
 			self.add_activation_summary(h_act)
 
 			return h_act
