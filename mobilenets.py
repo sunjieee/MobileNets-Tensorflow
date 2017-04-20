@@ -3,10 +3,11 @@ import numpy as np
 
 class MobileNets(object):
 	"""docstring for MobileNets"""
-	def __init__(self, images, is_training=True,  end_point=[]):
+	def __init__(self, images, is_training=True, spatial_squeeze=True, end_point=[]):
 		self.images = images
 		self.is_training = is_training
 		self.end_point = end_point
+		self.spatial_squeeze = spatial_squeeze
 
 	def get_tensor_size(self, tensor):
 		return tensor.get_shape().as_list()
@@ -121,7 +122,12 @@ class MobileNets(object):
 	def global_avg_pool(self, x, scope):
 
 		k = self.get_tensor_size(x)
-		return tf.nn.avg_pool(x, ksize=[1, k[1], k[2], 1], strides=[1, 1, 1, 1], padding="SAME")
+		return tf.nn.avg_pool(x, ksize=[1, k[1], k[2], 1], strides=[1, 1, 1, 1], padding="VALID")
+
+	def spatial_squeeze(self, x):
+		if spatial_squeeze:
+			return tf.squeeze(x, [1, 2], name='spatial_squeeze')
+		return x
 
 
 	def inference(self):
@@ -167,8 +173,10 @@ class MobileNets(object):
 		net = self.conv(net, 1024, [1, 1], 1, scope='conv14_pw')
 
 		net = self.global_avg_pool(net, scope='avg_pool15')
+		#print self.get_tensor_size(net)
+		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
 
-		self.net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
+		self.net = self.spatial_squeeze(net)
 
 		return net, self.end_point
 
