@@ -9,6 +9,9 @@ class MobileNets(object):
 		self.end_point = end_point
 		self.spatial_squeeze = spatial_squeeze
 
+	def get_tensor_name(self, tensor):
+		return tensor.op.name
+
 	def get_tensor_size(self, tensor):
 		return tensor.get_shape().as_list()
 
@@ -135,10 +138,10 @@ class MobileNets(object):
 
 		net = self.conv_dw(net, [3, 3], 1, scope='conv2_dw')
 		net = self.conv(net, 64, [1, 1], 1, scope='conv2_pw')
-		
+
 		net = self.conv_dw(net, [3, 3], 2, scope='conv3_dw')
 		net = self.conv(net, 128, [1, 1], 1, scope='conv3_pw')
-		
+
 		net = self.conv_dw(net, [3, 3], 1, scope='conv4_dw')
 		net = self.conv(net, 128, [1, 1], 1, scope='conv4_pw')
 
@@ -169,13 +172,13 @@ class MobileNets(object):
 		net = self.conv_dw(net, [3, 3], 2, scope='conv13_dw')
 		net = self.conv(net, 1024, [1, 1], 1, scope='conv13_pw')
 
-		net = self.conv_dw(net, [3, 3], 2, scope='conv14_dw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv14_dw')
 		net = self.conv(net, 1024, [1, 1], 1, scope='conv14_pw')
-
+		
 		net = self.global_avg_pool(net, scope='avg_pool15')
-		#print self.get_tensor_size(net)
+		
 		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
-
+		#print self.get_tensor_name(net) ,self.get_tensor_size(net)
 		self.net = self.squeeze(net)
 
 		return self.net, self.end_point
