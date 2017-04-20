@@ -7,9 +7,9 @@ Tensorflow implementation of MobileNets
 
 class MobileNets(object):
 	"""docstring for MobileNets"""
-	def __init__(self, is_training, images, end_point=[]):
-		self.is_training = is_training
+	def __init__(self, images, is_training=True, end_point=[]):
 		self.images = images
+		self.is_training = is_training
 		self.end_point = end_point
 
 	def get_tensor_size(self, tensor):
