@@ -89,9 +89,9 @@ class MobileNets(object):
 			h_conv = self.conv2d_strided(input_tensor, W, b, stride)
 
 			if bn != None:
-				h_bn = self.batch_norm(h_conv, depth, self.is_training)
+				h_conv = self.batch_norm(h_conv, depth, self.is_training)
 
-			h_act = act(h_bn)
+			h_act = act(h_conv)
 			self.end_point.append(h_act)
 			self.add_activation_summary(h_act)
 
@@ -109,16 +109,16 @@ class MobileNets(object):
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
 			if bn != None:
-				h_bn = self.batch_norm(h_conv, dim, self.is_training)
+				h_conv = self.batch_norm(h_conv, dim, self.is_training)
 
-			h_act = act(h_bn)
+			h_act = act(h_conv)
 			self.end_point.append(h_act)
 			self.add_activation_summary(h_act)
 
 			return h_act
 
 
-	def global_avg_pool(self, x):
+	def global_avg_pool(self, x, scope):
 
 		k = self.get_tensor_size(x)
 		return tf.nn.avg_pool(x, ksize=[1, k[1], k[2], 1], strides=[1, 1, 1, 1], padding="SAME")
