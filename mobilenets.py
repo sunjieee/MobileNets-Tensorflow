@@ -1,4 +1,4 @@
-import tensorflow
+import tensorflow as tf
 
 __author__ = "Sun Jie"
 """
@@ -80,7 +80,7 @@ class MobileNets(object):
 		return normed
 
 
-	def conv(self, input_tensor, depth, filter, stride=1, bn=batch_norm, act=tf.nn.relu, scope):
+	def conv(self, input_tensor, depth, filter, scope, stride=1, bn=batch_norm, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 			
@@ -100,7 +100,7 @@ class MobileNets(object):
 			return h_act
 
 
-	def conv_dw(self, input_tensor, filter, stride=1, bn=batch_norm, act=tf.nn.relu, scope):
+	def conv_dw(self, input_tensor, filter, scope, stride=1, bn=batch_norm, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 
