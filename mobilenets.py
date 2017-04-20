@@ -1,14 +1,9 @@
 import tensorflow as tf
 import numpy as np
 
-__author__ = "Sun Jie"
-"""
-Tensorflow implementation of MobileNets
-"""
-
 class MobileNets(object):
 	"""docstring for MobileNets"""
-	def __init__(self, images, is_training=True, end_point=[]):
+	def __init__(self, images, is_training=True,  end_point=[]):
 		self.images = images
 		self.is_training = is_training
 		self.end_point = end_point
@@ -81,7 +76,7 @@ class MobileNets(object):
 		return normed
 
 
-	def conv(self, input_tensor, depth, filter, scope, stride=1, bn=batch_norm, act=tf.nn.relu):
+	def conv(self, input_tensor, depth, filter, stride, scope, bn=batch_norm, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 			
@@ -101,7 +96,7 @@ class MobileNets(object):
 			return h_act
 
 
-	def conv_dw(self, input_tensor, filter, scope, stride=1, bn=batch_norm, act=tf.nn.relu):
+	def conv_dw(self, input_tensor, filter, stride, scope, bn=batch_norm, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 
@@ -127,51 +122,51 @@ class MobileNets(object):
 		return tf.nn.avg_pool(x, ksize=[1, k[1], k[2], 1], strides=[1, 1, 1, 1], padding="SAME")
 
 
-	def inference():
+	def inference(self):
 		net = self.conv(self.images, 32, [3, 3], 2, scope='conv1')
-		
-		net = self.conv_dw(net, [3, 3], scope='conv2_dw')
-		net = self.conv(net, 64, [1, 1], scope='conv2_pw')
+
+		net = self.conv_dw(net, [3, 3], 1, scope='conv2_dw')
+		net = self.conv(net, 64, [1, 1], 1, scope='conv2_pw')
 		
 		net = self.conv_dw(net, [3, 3], 2, scope='conv3_dw')
-		net = self.conv(net, 128, [1, 1], scope='conv3_pw')
+		net = self.conv(net, 128, [1, 1], 1, scope='conv3_pw')
 		
-		net = self.conv_dw(net, [3, 3], scope='conv4_dw')
-		net = self.conv(net, 128, [1, 1], scope='conv4_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv4_dw')
+		net = self.conv(net, 128, [1, 1], 1, scope='conv4_pw')
 
 		net = self.conv_dw(net, [3, 3], 2, scope='conv5_dw')
-		net = self.conv(net, 256, [1, 1], scope='conv5_pw')
+		net = self.conv(net, 256, [1, 1], 1, scope='conv5_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv6_dw')
-		net = self.conv(net, 256, [1, 1], scope='conv6_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv6_dw')
+		net = self.conv(net, 256, [1, 1], 1, scope='conv6_pw')
 
 		net = self.conv_dw(net, [3, 3], 2, scope='conv7_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv7_pw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv7_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv8_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv8_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv8_dw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv8_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv9_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv9_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv9_dw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv9_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv10_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv10_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv10_dw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv10_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv11_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv11_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv11_dw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv11_pw')
 
-		net = self.conv_dw(net, [3, 3], scope='conv12_dw')
-		net = self.conv(net, 512, [1, 1], scope='conv12_pw')
+		net = self.conv_dw(net, [3, 3], 1, scope='conv12_dw')
+		net = self.conv(net, 512, [1, 1], 1, scope='conv12_pw')
 
 		net = self.conv_dw(net, [3, 3], 2, scope='conv13_dw')
-		net = self.conv(net, 1024, [1, 1], scope='conv13_pw')
+		net = self.conv(net, 1024, [1, 1], 1, scope='conv13_pw')
 
 		net = self.conv_dw(net, [3, 3], 2, scope='conv14_dw')
-		net = self.conv(net, 1024, [1, 1], scope='conv14_pw')
+		net = self.conv(net, 1024, [1, 1], 1, scope='conv14_pw')
 
 		net = self.global_avg_pool(net, scope='avg_pool15')
 
-		self.net = self.conv(net, 1000, [1, 1], bn=None, act=tf.nn.softmax, scope='fc16')
+		self.net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
 
 		return net, self.end_point
 
