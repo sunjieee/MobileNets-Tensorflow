@@ -172,6 +172,6 @@ class MobileNets(object):
 
 		self.net = self.conv(net, 1000, [1, 1], bn=None, act=tf.nn.softmax, scope='fc16')
 
-		return net
+		return net, self.end_point
 
 
