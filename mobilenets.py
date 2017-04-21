@@ -22,6 +22,10 @@ class MobileNets(object):
 		stddev = constant * np.sqrt(2.0 / (shape[2] + shape[3]))
 		return self.weight_variable(shape, stddev=stddev, name=name)
 
+	def variance_scaling_initializer(self, shape, constant=1, name=None):
+		stddev = constant * np.sqrt(2.0 / shape[2])
+		return self.weight_variable(shape, stddev=stddev, name=name)
+
 	def weight_variable(self, shape, stddev=0.02, name=None):
 		initial = tf.truncated_normal(shape, stddev=stddev)
 		if name is None:
@@ -65,7 +69,7 @@ class MobileNets(object):
 			
 			dim = self.get_tensor_size(input_tensor)[3]
 			
-			W = self.weight_variable_xavier_initialized([filter[0], filter[1], dim, depth], name='weight')
+			W = self.variance_scaling_initializer([filter[0], filter[1], dim, depth], name='weight')
 			b = self.bias_variable([depth], name='bias')
 			h_conv = self.conv2d_strided(input_tensor, W, b, stride)
 
@@ -85,7 +89,7 @@ class MobileNets(object):
 
 			dim = self.get_tensor_size(input_tensor)[3]
 
-			W = self.weight_variable_xavier_initialized([filter[0], filter[1], dim, 1], name='weight')
+			W = self.variance_scaling_initializer([filter[0], filter[1], dim, 1], name='weight')
 			b = self.bias_variable([dim], name='bias')
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
