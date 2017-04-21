@@ -58,32 +58,6 @@ class MobileNets(object):
 		if grad is not None:
 			tf.summary.histogram(var.op.name + "/gradient", grad)
 
-	def batch_norm(self, x, n_out, phase_train, scope='bn', decay=0.9, eps=1e-5, stddev=0.02):
-		"""
-		Code taken from http://stackoverflow.com/a/34634291/2267819
-		"""
-		with tf.variable_scope(scope):
-			
-			beta = tf.get_variable(name='beta', shape=[n_out], initializer=tf.constant_initializer(0.0)
-	                               , trainable=True)
-			gamma = tf.get_variable(name='gamma', shape=[n_out], initializer=tf.random_normal_initializer(1.0, stddev),
-	                                trainable=True)
-			batch_mean, batch_var = tf.nn.moments(x, [0, 1, 2], name='moments')
-			ema = tf.train.ExponentialMovingAverage(decay=decay)
-
-			def mean_var_with_update():
-				ema_apply_op = ema.apply([batch_mean, batch_var])
-				with tf.control_dependencies([ema_apply_op]):
-					return tf.identity(batch_mean), tf.identity(batch_var)
-			with tf.variable_scope(tf.get_variable_scope(), reuse=False):
-				if phase_train:
-					mean, var = mean_var_with_update()
-				else:
-					mean, var = lambda: (ema.average(batch_mean), ema.average(batch_var))
-
-			normed = tf.nn.batch_normalization(x, mean, var, beta, gamma, eps)
-		return normed
-
 
 	def conv(self, input_tensor, depth, filter, stride, scope, bn=batch_norm, act=tf.nn.relu):
 		
@@ -96,7 +70,7 @@ class MobileNets(object):
 			h_conv = self.conv2d_strided(input_tensor, W, b, stride)
 
 			if bn != None:
-				h_conv = self.batch_norm(h_conv, depth, self.is_training)
+				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
 
 			h_act = act(h_conv)
 			self.end_point.append(h_act)
@@ -116,7 +90,7 @@ class MobileNets(object):
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
 			if bn != None:
-				h_conv = self.batch_norm(h_conv, dim, self.is_training)
+				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
 
 			h_act = act(h_conv)
 			self.end_point.append(h_act)
@@ -177,13 +151,13 @@ class MobileNets(object):
 
 		net = self.conv_dw(net, [3, 3], 1, scope='conv14_dw')
 		net = self.conv(net, 1024, [1, 1], 1, scope='conv14_pw')
-		
+
 		net = self.global_avg_pool(net, scope='avg_pool15')
 		
 		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
 		#print self.get_tensor_name(net) ,self.get_tensor_size(net)
 		self.net = self.squeeze(net)
-
+		
 		return self.net, self.end_point
 
 
