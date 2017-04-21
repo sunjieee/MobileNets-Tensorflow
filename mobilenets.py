@@ -76,11 +76,12 @@ class MobileNets(object):
 			if bn != None:
 				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
 
-			h_act = act(h_conv)
-			self.end_point.append(h_act)
-			self.add_activation_summary(h_act)
+			if act != None:
+				h_conv = act(h_conv)
+			self.end_point.append(h_conv)
+			self.add_activation_summary(h_conv)
 
-			return h_act
+			return h_conv
 
 
 	def conv_dw(self, input_tensor, filter, stride, scope, bn='bn', act=tf.nn.relu):
@@ -95,12 +96,12 @@ class MobileNets(object):
 
 			if bn != None:
 				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
+			if act != None:
+				h_conv = act(h_conv)
+			self.end_point.append(h_conv)
+			self.add_activation_summary(h_conv)
 
-			h_act = act(h_conv)
-			self.end_point.append(h_act)
-			self.add_activation_summary(h_act)
-
-			return h_act
+			return h_conv
 
 
 	def global_avg_pool(self, x, scope):
@@ -158,7 +159,7 @@ class MobileNets(object):
 
 		net = self.global_avg_pool(net, scope='avg_pool15')
 		
-		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=tf.nn.softmax, scope='fc16')
+		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=None, scope='fc16')
 		#print self.get_tensor_name(net) ,self.get_tensor_size(net)
 		self.net = self.squeeze(net)
 		
