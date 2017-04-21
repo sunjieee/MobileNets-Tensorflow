@@ -76,11 +76,14 @@ class MobileNets(object):
 			b = self.bias_variable([depth], name='bias')
 			h_conv = self.conv2d_strided(input_tensor, W, b, stride)
 
-			if bn != None:
+			add_to_regularization_and_summary(W)
+
+			if bn is not None:
 				h_conv = bn(h_conv, training=self.is_training)
 
-			if act != None:
+			if act is not None:
 				h_conv = act(h_conv)
+				
 			self.end_points[scope] = h_conv
 			self.add_activation_summary(h_conv)
 
@@ -97,10 +100,13 @@ class MobileNets(object):
 			b = self.bias_variable([dim], name='bias')
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
-			if bn != None:
+			add_to_regularization_and_summary(W)
+
+			if bn is not None:
 				h_conv = bn(h_conv, training=self.is_training)
-			if act != None:
+			if act is not None:
 				h_conv = act(h_conv)
+
 			self.end_points[scope] = h_conv
 			self.add_activation_summary(h_conv)
 
@@ -169,5 +175,3 @@ class MobileNets(object):
 		self.end_points['predictions'] = tf.nn.softmax(self.logits)
 		
 		return self.logits, self.end_points
-
-
