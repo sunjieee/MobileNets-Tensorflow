@@ -63,7 +63,7 @@ class MobileNets(object):
 			tf.summary.histogram(var.op.name + "/gradient", grad)
 
 
-	def conv(self, input_tensor, depth, filter, stride, scope, bn=batch_norm, act=tf.nn.relu):
+	def conv(self, input_tensor, depth, filter, stride, scope, bn='bn', act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 			
@@ -83,7 +83,7 @@ class MobileNets(object):
 			return h_act
 
 
-	def conv_dw(self, input_tensor, filter, stride, scope, bn=batch_norm, act=tf.nn.relu):
+	def conv_dw(self, input_tensor, filter, stride, scope, bn='bn', act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 
