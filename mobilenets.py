@@ -56,6 +56,9 @@ class MobileNets(object):
 			tf.summary.histogram(var.op.name, var)
 			tf.add_to_collection("reg_loss", tf.nn.l2_loss(var))
 
+	def add_image_summary(self, images):
+		tf.summary.image(var.op.name, images, 10)
+
 	def add_activation_summary(self, var):
 		tf.summary.histogram(var.op.name + "/activation", var)
 		tf.summary.scalar(var.op.name + "/sparsity", tf.nn.zero_fraction(var))
@@ -83,7 +86,7 @@ class MobileNets(object):
 
 			if act is not None:
 				h_conv = act(h_conv)
-				
+
 			self.end_points[scope] = h_conv
 			self.add_activation_summary(h_conv)
 
