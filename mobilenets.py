@@ -51,7 +51,7 @@ class MobileNets(object):
 		conv = tf.nn.depthwise_conv2d(x, W, strides=[1, s, s, 1], padding="SAME")
 		return tf.nn.bias_add(conv, b)
 
-	def add_to_regularization_and_summary(var):
+	def add_to_regularization_and_summary(self, var):
 		if var is not None:
 			tf.summary.histogram(var.op.name, var)
 			tf.add_to_collection("reg_loss", tf.nn.l2_loss(var))
