@@ -2,15 +2,18 @@ import tensorflow as tf
 import numpy as np
 
 __author__ = 'Sun Jie'
-'''Tensorflow Implementation of MobileNets'''
+'''
+Tensorflow Implementation of MobileNets
+More detail, please refer to Google's paper(https://arxiv.org/abs/1704.04861).
+'''
 
 class MobileNets(object):
-	"""docstring for MobileNets"""
-	def __init__(self, images, is_training=True, spatial_squeeze=True, end_point=[]):
+
+	def __init__(self, images, is_training=True, spatial_squeeze=True):
 		self.images = images
 		self.is_training = is_training
-		self.end_point = end_point
 		self.spatial_squeeze = spatial_squeeze
+		self.end_points = {}
 
 	def get_tensor_name(self, tensor):
 		return tensor.op.name
@@ -63,7 +66,7 @@ class MobileNets(object):
 			tf.summary.histogram(var.op.name + "/gradient", grad)
 
 
-	def conv(self, input_tensor, depth, filter, stride, scope, bn='bn', act=tf.nn.relu):
+	def conv(self, input_tensor, depth, filter, stride, scope, bn=tf.layers.batch_normalization, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 			
@@ -73,18 +76,17 @@ class MobileNets(object):
 			b = self.bias_variable([depth], name='bias')
 			h_conv = self.conv2d_strided(input_tensor, W, b, stride)
 
-			if bn != None:
-				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
+			h_conv = bn(h_conv, training=self.is_training)
 
-			if act != None:
-				h_conv = act(h_conv)
-			self.end_point.append(h_conv)
+			h_conv = act(h_conv)
+
+			self.end_points[scope] = h_conv
 			self.add_activation_summary(h_conv)
 
 			return h_conv
 
 
-	def conv_dw(self, input_tensor, filter, stride, scope, bn='bn', act=tf.nn.relu):
+	def conv_dw(self, input_tensor, filter, stride, scope, bn=tf.layers.batch_normalization, act=tf.nn.relu):
 		
 		with tf.variable_scope(scope):
 
@@ -94,11 +96,11 @@ class MobileNets(object):
 			b = self.bias_variable([dim], name='bias')
 			h_conv = self.depthwise_conv2d_strided(input_tensor, W, b, stride)
 
-			if bn != None:
-				h_conv = tf.layers.batch_normalization(h_conv, training=self.is_training)
-			if act != None:
-				h_conv = act(h_conv)
-			self.end_point.append(h_conv)
+			h_conv = bn(h_conv, training=self.is_training)
+			
+			h_conv = act(h_conv)
+
+			self.end_points[scope] = h_conv
 			self.add_activation_summary(h_conv)
 
 			return h_conv
@@ -113,8 +115,7 @@ class MobileNets(object):
 		if self.spatial_squeeze:
 			return tf.squeeze(x, [1, 2], name='spatial_squeeze')
 		return x
-
-
+	
 	def inference(self):
 		net = self.conv(self.images, 32, [3, 3], 2, scope='conv1')
 
@@ -161,8 +162,11 @@ class MobileNets(object):
 		
 		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=None, scope='fc16')
 		#print self.get_tensor_name(net) ,self.get_tensor_size(net)
-		self.net = self.squeeze(net)
+		self.logits = self.squeeze(net)
+
+		self.end_points['logits'] = self.logits
+		self.end_points['predictions'] = tf.nn.softmax(self.logits)
 		
-		return self.net, self.end_point
+		return self.logits, self.end_points
 
 
