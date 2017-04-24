@@ -81,9 +81,10 @@ class Preprocessing(object):
 		image, label = self._read_input(filename_queue)
 
 		capacity = min_after_dequeue + 3 * self.batch_size
-		image_batch, label_batch = tf.train.shuffle_batch([image, label], 
-														batch_size=self,batch_size,
-														num_threads=self.num_preprocess_threads,
-														capacity=self.capacity,
-														min_after_dequeue=min_after_dequeue)
+		image_batch, label_batch = tf.train.shuffle_batch_join([image, label], 
+			batch_size=self,batch_size,
+			num_threads=self.num_preprocess_threads,
+			capacity=self.capacity,
+			min_after_dequeue=min_after_dequeue)
+		
 		return image_batch, label_batch
