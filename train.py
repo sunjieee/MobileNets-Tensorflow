@@ -19,8 +19,28 @@ tf.app.flags.DEFINE_string('data_path', '',
 def get_loss(logits, labels):
 	labels_onehot = tf.one_hot(labels, depth=1000)
 	cross_entropy = tf.losses.softmax_cross_entropy(logits, labels_onehot)
-	return cross_entropy
+	regularization_loss = tf.add_n(tf.get_collection('losses', scope))
+	loss = cross_entropy +　regularization_loss
+	return loss
+	
+def average_gradients(tower_grads):
+	average_grads = []
 
+	for grad_and_vars in zip(*tower_grads):
+
+		grads = []
+		for g, _ in grad_and_vars:
+			expanded_g = tf.expand_dims(g, 0)
+			grads.append(expanded_g)
+		grad = tf.concat(grads, 0)
+		grad = tf.reduce_mean(grad, 0)
+
+		v = grad_and_vars[0][1]
+		grad_and_var = (grad, v)
+
+		average_grads.append(grad_and_var)
+
+	return average_grads
 
 def training(loss):
 	tf.summary.scalar('loss', loss)
@@ -33,9 +53,34 @@ def training(loss):
 		LEARING_RATE_DECAY,
 		staircase=True)
 
-	optimizer = tf.train.RMSPropOptimizer(learning_rate)
+	opt = tf.train.RMSPropOptimizer(learning_rate)
+	
+	tower_grads = []
+	reuse_variables = False
+	
+	for i in range(N_GPU):
 
-	train_op = optimizer.minimize(loss, global_step=global_step)
+		with tf.device('/gpu:%d' % i):
+			with tf.name_scope('GPU_%d' % i) as scope:
+				cur_loss = get_loss(x, y_, scope, reuse_variables)
+				reuse_variables = True
+				grads = opt.compute_gradients(cur_loss)
+				tower_grads.append(grads)
+	grads = average_gradients(tower_grads)
+	for grad, var in grads:
+		if grad is not None:
+			tf.histogram_summary('gradients_on_average/%s' % var.op.name, grad)
+			
+	apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
+	for var in tf.trainable_variables():
+		tf.histogram_summary(var.op.name, var)
+		
+	variable_averages = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY, global_step)
+	variables_to_average = (tf.trainable_variables() +tf.moving_average_variables())
+	variables_averages_op = variable_averages.apply(variables_to_average)
+	
+
+	train_op = tf.group(apply_gradient_op, variables_averages_op)
 
 	return train_op
 
