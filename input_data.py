@@ -1,6 +1,11 @@
 import tensorflow as tf
 import numpy as np
 
+__author__ = 'Sun Jie'
+'''
+Tensorflow Implementation of MobileNets
+More detail, please refer to Google's paper(https://arxiv.org/abs/1704.04861).
+'''
 
 class Preprocessing(object):
 	
