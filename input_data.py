@@ -53,28 +53,34 @@ class Preprocessing(object):
 	def _read_input(self, filename_queue):
 		reader = tf.TFRecordReader()
 
-		_,serialized_example = reader.read(filename_queue)
+		_, serialized_example = reader.read(filename_queue)
+		
+		images_and_labels = []
+		
+		for thread_id in range(num_preprocess_threads):
 
-		features = tf.parse_single_example(
-			serialized_example,
-			features={
-				'image':tf.FixedLenFeature([],tf.string),
-				'label':tf.FixedLenFeature([],tf.int64)
-			})
-		decoded_image = tf.decode_jpeg(features['image'], channels=3)
-		reshaped_image = tf.reshape(decoded_image, [self.image_size, self.image_size, 3])
-		if is_training:
-			distorted_image = preprocess_for_train(reshaped_image)
-		else:
-			distorted_image = tf.image.convert_image_dtype(reshaped_image, dtype=tf.float32)
+			features = tf.parse_single_example(
+				serialized_example,
+				features={
+					'image':tf.FixedLenFeature([],tf.string),
+					'label':tf.FixedLenFeature([],tf.int64)
+				})
+			decoded_image = tf.decode_jpeg(features['image'], channels=3)
+			reshaped_image = tf.reshape(decoded_image, [self.image_size, self.image_size, 3])
+			if is_training:
+				distorted_image = preprocess_for_train(reshaped_image)
+			else:
+				distorted_image = tf.image.convert_image_dtype(reshaped_image, dtype=tf.float32)
 
-		distorted_image = tf.subtract(distorted_image, 0.5)
-		distorted_image = tf.multiply(distorted_image, 2.0)
-		#tf.summary.image('final_distorted_image', tf.expand_dims(distorted_image, 0))
+			distorted_image = tf.subtract(distorted_image, 0.5)
+			distorted_image = tf.multiply(distorted_image, 2.0)
+			#tf.summary.image('final_distorted_image', tf.expand_dims(distorted_image, 0))
 
-		label = tf.cast(features['label'], tf.int32)
+			label = tf.cast(features['label'], tf.int32)
+			
+			images_and_labels.append([distorted_image, label])
 
-		return distorted_image, label
+		return images_and_labels
 		
 
 
@@ -82,10 +88,10 @@ class Preprocessing(object):
 		files = tf.train.match_filenames_once(data_path)
 		filename_queue = tf.train.string_input_producer(files, shuffle=True)
 
-		image, label = self._read_input(filename_queue)
+		images_and_labels = self._read_input(filename_queue)
 
 		capacity = min_after_dequeue + 3 * self.batch_size
-		image_batch, label_batch = tf.train.shuffle_batch([image, label], 
+		image_batch, label_batch = tf.train.shuffle_batch(images_and_labels, 
 			batch_size=self,batch_size,
 			capacity=self.capacity,
 			min_after_dequeue=min_after_dequeue)
