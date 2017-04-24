@@ -4,11 +4,10 @@ import numpy as np
 
 class Preprocessing(object):
 	
-	def __init__(self, data_path, image_size=224, num_preprocess_threads=1, min_after_dequeue=10000, is_training=True):
+	def __init__(self, data_path, image_size=224, min_after_dequeue=10000, is_training=True):
 
 		self.data_path = data_path
 		self.image_size = image_size
-		self.num_preprocess_threads = num_preprocess_threads
 		self.min_after_dequeue = min_after_dequeue
 		self.is_training = is_training
 
@@ -81,9 +80,8 @@ class Preprocessing(object):
 		image, label = self._read_input(filename_queue)
 
 		capacity = min_after_dequeue + 3 * self.batch_size
-		image_batch, label_batch = tf.train.shuffle_batch_join([image, label], 
+		image_batch, label_batch = tf.train.shuffle_batch([image, label], 
 			batch_size=self,batch_size,
-			num_threads=self.num_preprocess_threads,
 			capacity=self.capacity,
 			min_after_dequeue=min_after_dequeue)
 		
