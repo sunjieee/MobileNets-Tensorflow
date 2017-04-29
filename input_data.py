@@ -67,9 +67,9 @@ class Preprocessing(object):
 					'label':tf.FixedLenFeature([],tf.int64)
 				})
 			decoded_image = tf.decode_jpeg(features['image'], channels=3)
-			reshaped_image = tf.reshape(decoded_image, [self.image_size, self.image_size, 3])
+
 			if is_training:
-				distorted_image = preprocess_for_train(reshaped_image)
+				distorted_image = preprocess_for_train(reshaped_image, self.image_size, self.image_size, None)
 			else:
 				distorted_image = tf.image.convert_image_dtype(reshaped_image, dtype=tf.float32)
 
@@ -92,7 +92,7 @@ class Preprocessing(object):
 		images_and_labels = self._read_input(filename_queue)
 
 		capacity = min_after_dequeue + 3 * self.batch_size
-		image_batch, label_batch = tf.train.shuffle_batch(images_and_labels, 
+		image_batch, label_batch = tf.train.shuffle_batch_join(images_and_labels, 
 			batch_size=self,batch_size,
 			capacity=self.capacity,
 			min_after_dequeue=min_after_dequeue)
