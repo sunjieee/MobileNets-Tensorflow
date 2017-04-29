@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import random
 
 __author__ = "Sun Jie"
 
@@ -28,15 +29,13 @@ def _process_image_files(filenames, labels):
 	
 	for i in range(len(filenames)):
 		
-		with tf.gfile.FastGFile(filename[i], 'rb') as f:
+		with tf.gfile.FastGFile(filenames[i], 'rb') as f:
 			
 			image_data = f.read()
-		
-		image_raw = image_data.tostring()
 
 		example = tf.train.Example(features=tf.train.Features(feature={
-			'image': _bytes_feature(image_raw),
-			'label': _int64_feature(label[i])
+			'image': _bytes_feature(image_data),
+			'label': _int64_feature(labels[i])
 		}))
 		
 		writer.write(example.SerializeToString())
@@ -76,7 +75,7 @@ def _process_dataset():
 	_process_image_files(filenames, labels)
 
 
-def main():
+def main(_):
 	
 	_process_dataset()
 
