@@ -68,7 +68,7 @@ class Preprocessing(object):
 				})
 			decoded_image = tf.decode_jpeg(features['image'], channels=3)
 
-			if is_training:
+			if self.is_training:
 				distorted_image = preprocess_for_train(reshaped_image, self.image_size, self.image_size, None)
 			else:
 				distorted_image = tf.image.convert_image_dtype(reshaped_image, dtype=tf.float32)
@@ -87,7 +87,15 @@ class Preprocessing(object):
 
 	def _read_input_queue(self):
 		files = tf.train.match_filenames_once(data_path)
-		filename_queue = tf.train.string_input_producer(files, shuffle=True)
+
+		if if self.is_training:
+			filename_queue = tf.train.string_input_producer(files,
+													shuffle=True,
+													capacity=16)
+		else:
+			filename_queue = tf.train.string_input_producer(files,
+													shuffle=False,
+													capacity=1)
 
 		images_and_labels = self._read_input(filename_queue)
 
