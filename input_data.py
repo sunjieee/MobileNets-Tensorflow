@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib.pyplot as plt
 
 __author__ = 'Sun Jie'
 '''
@@ -7,102 +8,125 @@ Tensorflow Implementation of MobileNets
 More detail, please refer to Google's paper(https://arxiv.org/abs/1704.04861).
 '''
 
-class Preprocessing(object):
+
+tf.app.flags.DEFINE_string('data_path', '/home/sunjieeee/new_project/valid.*',
+	'Data directory')
+
+tf.app.flags.DEFINE_integer('batch_size', 256,
+	"""Number of images to process in a batch.""")
+
+tf.app.flags.DEFINE_integer('image_size', 224,
+	"""Provide square images of this size.""")
+
+tf.app.flags.DEFINE_integer('num_preprocess_threads', 4,
+	"""Number of preprocessing threads per tower. """)
+
+tf.app.flags.DEFINE_bool('is_training', True,
+	'''Is trainning''')
+
+FLAGS = tf.app.flags.FLAGS
+
+def decode_jpeg(image):
+
+	image = tf.image.decode_jpeg(image, channels=3)
+
+	image = tf.image.convert_image_dtype(image, dtype=tf.float32)
+
+	return image
+
+
+def distort_color(image, color_ordering=0):
 	
-	def __init__(self, data_path, image_size=224, num_preprocess_threads= 4, min_after_dequeue=10000, is_training=True):
+	if color_ordering == 0:
+		image = tf.image.random_brightness(image, max_delta=32./255.)
+		image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+		image = tf.image.random_hue(image, max_delta=0.2)
+		image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+	else:
+		image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+		image = tf.image.random_brightness(image, max_delta=32./255.)
+		image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+		image = tf.image.random_hue(image, max_delta=0.2)
 
-		self.data_path = data_path
-		self.image_size = image_size
-		self.num_preprocess_threads = num_preprocess_threads
-		self.min_after_dequeue = min_after_dequeue
-		self.is_training = is_training
+	return tf.clip_by_value(image, 0.0, 1.0)
 
+def preprocess_for_train(image, height, width, bbox):
+	
+	if bbox is None:
+		
+		bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
+        
+	bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
+		tf.shape(image), bounding_boxes=bbox)
+	
+	bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
+		tf.shape(image), bounding_boxes=bbox)
+	
+	distorted_image = tf.slice(image, bbox_begin, bbox_size)
 
-	def distort_color(image, color_ordering=0):
-		if color_ordering == 0:
-			image = tf.image.random_brightness(image, max_delta=32./255.)
-			image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-			image = tf.image.random_hue(image, max_delta=0.2)
-			image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-		else:
-			image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-			image = tf.image.random_brightness(image, max_delta=32./255.)
-			image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-			image = tf.image.random_hue(image, max_delta=0.2)
-
-		return tf.clip_by_value(image, 0.0, 1.0)
-
-	def preprocess_for_train(image, height, width, bbox):
-		if bbox is None:
-			bbox = tf.constant([0.0, 0.0, 1.0, 1.0], dtype=tf.float32, shape=[1, 1, 4])
-		if image.dtype != tf.float32:
-			image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-	        
-		bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
-			tf.shape(image), bounding_boxes=bbox)
-		bbox_begin, bbox_size, _ = tf.image.sample_distorted_bounding_box(
-			tf.shape(image), bounding_boxes=bbox)
-		distorted_image = tf.slice(image, bbox_begin, bbox_size)
-
-
-		distorted_image = tf.image.resize_images(distorted_image, [height, width], method=np.random.randint(4))
-		distorted_image = tf.image.random_flip_left_right(distorted_image)
-		distorted_image = distort_color(distorted_image, np.random.randint(2))
-		return distorted_image
+	distorted_image = tf.image.resize_images(distorted_image, [height, width], method=np.random.randint(4))
+	
+	distorted_image = tf.image.random_flip_left_right(distorted_image)
+	
+	distorted_image = distort_color(distorted_image, np.random.randint(2))
+	
+	return distorted_image
 		
 
-	def _read_input(self, filename_queue):
-		reader = tf.TFRecordReader()
+def _read_input(filename_queue):
+	
+	reader = tf.TFRecordReader()
 
-		_, serialized_example = reader.read(filename_queue)
+	_, serialized_example = reader.read(filename_queue)
+	
+	images_and_labels = []
+	
+	for thread_id in range(FLAGS.num_preprocess_threads):
+
+		features = tf.parse_single_example(
+			serialized_example,
+			features={
+				'image':tf.FixedLenFeature([],tf.string),
+				'label':tf.FixedLenFeature([],tf.int64)
+			})
 		
-		images_and_labels = []
-		
-		for thread_id in range(num_preprocess_threads):
+		decoded_image = decode_jpeg(features['image'])
 
-			features = tf.parse_single_example(
-				serialized_example,
-				features={
-					'image':tf.FixedLenFeature([],tf.string),
-					'label':tf.FixedLenFeature([],tf.int64)
-				})
-			decoded_image = tf.decode_jpeg(features['image'], channels=3)
-
-			if self.is_training:
-				distorted_image = preprocess_for_train(reshaped_image, self.image_size, self.image_size, None)
-			else:
-				distorted_image = tf.image.convert_image_dtype(reshaped_image, dtype=tf.float32)
-
-			distorted_image = tf.subtract(distorted_image, 0.5)
-			distorted_image = tf.multiply(distorted_image, 2.0)
-			#tf.summary.image('final_distorted_image', tf.expand_dims(distorted_image, 0))
-
-			label = tf.cast(features['label'], tf.int32)
+		if FLAGS.is_training:
 			
-			images_and_labels.append([distorted_image, label])
-
-		return images_and_labels
+			distorted_image = preprocess_for_train(decoded_image, FLAGS.image_size, FLAGS.image_size, None)
 		
-
-
-	def _read_input_queue(self):
-		files = tf.train.match_filenames_once(data_path)
-
-		if if self.is_training:
-			filename_queue = tf.train.string_input_producer(files,
-													shuffle=True,
-													capacity=16)
 		else:
-			filename_queue = tf.train.string_input_producer(files,
-													shuffle=False,
-													capacity=1)
-
-		images_and_labels = self._read_input(filename_queue)
-
-		capacity = min_after_dequeue + 3 * self.batch_size
-		image_batch, label_batch = tf.train.shuffle_batch_join(images_and_labels, 
-			batch_size=self,batch_size,
-			capacity=self.capacity,
-			min_after_dequeue=min_after_dequeue)
+			
+			distorted_image = tf.image.resize_images(decoded_image, [FLAGS.image_size, FLAGSimage_size], 
+				method=np.random.randint(4))
+			
+		distorted_image = tf.subtract(distorted_image, 0.5)
 		
-		return image_batch, label_batch
+		distorted_image = tf.multiply(distorted_image, 2.0)
+
+		label = tf.cast(features['label'], tf.int32)
+		
+		images_and_labels.append([distorted_image, label])
+
+	return images_and_labels
+		
+
+
+def _read_input_queue():
+	
+	with tf.name_scope('input_data'):
+
+		files = tf.train.match_filenames_once(FLAGS.data_path)
+
+		filename_queue = tf.train.string_input_producer(files, shuffle=False)
+
+		images_and_labels = _read_input(filename_queue)
+
+		capacity = 2 * FLAGS.num_preprocess_threads * FLAGS.batch_size
+		
+		image_batch, label_batch = tf.train.batch_join(images_and_labels, 
+			batch_size=FLAGS.batch_size,
+			capacity=capacity)
+	
+	return image_batch, label_batch
