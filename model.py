@@ -9,8 +9,9 @@ More detail, please refer to Google's paper(https://arxiv.org/abs/1704.04861).
 
 class MobileNets(object):
 
-	def __init__(self, images, is_training=True, spatial_squeeze=True):
+	def __init__(self, images, num_classes=1000, is_training=True, spatial_squeeze=True):
 		self.images = images
+		self.num_classes=num_classes
 		self.is_training = is_training
 		self.spatial_squeeze = spatial_squeeze
 		self.end_points = {}
@@ -170,7 +171,7 @@ class MobileNets(object):
 
 		net = self.global_avg_pool(net, scope='avg_pool15')
 		
-		net = self.conv(net, 1000, [1, 1], 1, bn=None, act=None, scope='fc16')
+		net = self.conv(net, self.num_classes, [1, 1], 1, bn=None, act=None, scope='fc16')
 		#print self.get_tensor_name(net) ,self.get_tensor_size(net)
 		self.logits = self.squeeze(net)
 
