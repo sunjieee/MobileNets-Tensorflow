@@ -35,7 +35,8 @@ def _process_image_files(filenames, labels):
 
 		example = tf.train.Example(features=tf.train.Features(feature={
 			'image': _bytes_feature(image_data),
-			'label': _int64_feature(labels[i])
+			'label': _int64_feature(labels[i]),
+			'filename':_bytes_feature(os.path.basename(filenames[i]))
 		}))
 		
 		writer.write(example.SerializeToString())
