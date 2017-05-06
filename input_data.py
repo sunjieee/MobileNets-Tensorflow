@@ -1,3 +1,4 @@
+
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
@@ -38,14 +39,23 @@ def decode_jpeg(image):
 def distort_color(image, color_ordering=0):
 	
 	if color_ordering == 0:
+		
 		image = tf.image.random_brightness(image, max_delta=32./255.)
+		
 		image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+		
 		image = tf.image.random_hue(image, max_delta=0.2)
+		
 		image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+	
 	else:
+		
 		image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
+		
 		image = tf.image.random_brightness(image, max_delta=32./255.)
+		
 		image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+		
 		image = tf.image.random_hue(image, max_delta=0.2)
 
 	return tf.clip_by_value(image, 0.0, 1.0)
@@ -72,9 +82,37 @@ def preprocess_for_train(image, height, width, bbox):
 
 def _read_input(filename_queue):
 	
-	reader = tf.TFRecordReader()
+	examples_per_shard = 1024
+	
+	min_queue_examples = examples_per_shard * 16;
 
-	_, serialized_example = reader.read(filename_queue)
+	if is_training:
+		
+		examples_queue = tf.RandomShuffleQueue(
+			capacity=min_queue_examples + 3 * batch_size,
+			min_after_dequeue=min_queue_examples,
+			dtypes=[tf.string])
+	
+	else:
+		
+		examples_queue = tf.FIFOQueue(
+			capacity=examples_per_shard + 3 * batch_size,
+			dtypes=[tf.string])
+
+	enqueue_ops = []
+	
+	for _ in range(num_readers):
+		
+		reader = tf.TFRecordReader()
+		
+		_, value = reader.read(filename_queue)
+		
+		enqueue_ops.append(examples_queue.enqueue([value]))
+
+	tf.train.queue_runner.add_queue_runner(
+		tf.train.queue_runner.QueueRunner(examples_queue, enqueue_ops))
+	
+	serialized_example = examples_queue.dequeue()
 	
 	images_and_labels = []
 	
