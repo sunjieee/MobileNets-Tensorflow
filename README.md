@@ -2,6 +2,8 @@
 
 Google MobileNets Implementation using Tensorflow
 
+Code for paper "Orientation Estimation Network" : [Orientation Estimation Network](https://github.com/sunjieee/Orientation_Estimation_Network)
+
 **NOTE :** Work in progress.
 
 ## Library Versions
